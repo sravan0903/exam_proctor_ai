@@ -1,16 +1,20 @@
 from ultralytics import YOLO
 import cv2
 
-# Load YOLO model once (VERY IMPORTANT)
-model = YOLO("yolov8n.pt")
+# Global variable
+model = None
+
+
+def get_model():
+    global model
+    if model is None:
+        print("Loading YOLO model...")
+        model = YOLO("yolov8n.pt")
+    return model
 
 
 def detect_faces(frame):
-    """
-    Detect faces/persons in a frame
-    Returns number of detected persons
-    """
-
+    model = get_model()
     results = model(frame)
 
     face_count = 0
@@ -21,10 +25,8 @@ def detect_faces(frame):
             cls = int(box.cls[0])
             conf = float(box.conf[0])
 
-            # YOLO class 0 = person
             if cls == 0 and conf > 0.5:
                 face_count += 1
-
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 detections.append({
                     "bbox": [x1, y1, x2, y2],
@@ -33,7 +35,9 @@ def detect_faces(frame):
 
     return face_count, detections
 
+
 def detect_objects(frame):
+    model = get_model()
     results = model(frame)
 
     person_count = 0
@@ -45,10 +49,8 @@ def detect_objects(frame):
         for box in r.boxes:
             cls = int(box.cls[0])
             conf = float(box.conf[0])
-
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-            # PERSON
             if cls == 0 and conf > 0.5:
                 person_count += 1
                 person_boxes.append((x1, y1, x2, y2))
@@ -58,7 +60,6 @@ def detect_objects(frame):
                     "bbox": [x1, y1, x2, y2]
                 })
 
-            # PHONE
             if cls == 67 and conf > 0.5:
                 phone_count += 1
                 detections.append({
